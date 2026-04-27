@@ -64,10 +64,10 @@ jobs:
       # ──────────────────────────────────────────────────────────────────────────
       - name: Download MoltenVK SDK
         run: |
-          curl -L https://github.com/KhronosGroup/MoltenVK/releases/download/v1.2.11/MoltenVK-all.tar -o MoltenVK.tar
-          tar -xf MoltenVK.tar
+          curl -L https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.1/MoltenVK-ios.framework.zip -o MoltenVK-ios.framework.zip
+          unzip MoltenVK-ios.framework.zip
           mkdir -p Frameworks
-          cp -r MoltenVK/MoltenVK/iOS/framework/MoltenVK.framework Frameworks/
+          cp -r MoltenVK.framework Frameworks/
           echo "✅ MoltenVK.framework extracted to: $(pwd)/Frameworks"
           echo "MOLTENVK_FRAMEWORK_PATH=$(pwd)/Frameworks" >> $GITHUB_ENV
 
