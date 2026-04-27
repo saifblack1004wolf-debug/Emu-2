@@ -19,8 +19,8 @@ endif()
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	option(USE_VULKAN "Enable Vulkan GS renderer" ON)
 else()
-	# Vulkan on iOS goes through MoltenVK; disable unless explicitly enabled.
-	option(USE_VULKAN "Enable Vulkan GS renderer (via MoltenVK on iOS)" OFF)
+	# Vulkan on iOS goes through MoltenVK; enable by default for iOS.
+	option(USE_VULKAN "Enable Vulkan GS renderer (via MoltenVK on iOS)" ON)
 endif()
 
 # -------------------------------------------------------------------------------

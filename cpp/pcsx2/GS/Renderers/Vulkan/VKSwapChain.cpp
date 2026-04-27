@@ -10,6 +10,10 @@
 #include "common/CocoaTools.h"
 #include "common/Console.h"
 
+#if TARGET_OS_IPHONE
+#import <UIKit/UIKit.h>
+#endif
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -104,10 +108,28 @@ VkSurfaceKHR VKSwapChain::CreateVulkanSurface(VkInstance instance, VkPhysicalDev
 #endif
 
 #if defined(VK_USE_PLATFORM_METAL_EXT)
-	if (wi->type == WindowInfo::Type::MacOS)
+	if (wi->type == WindowInfo::Type::MacOS || wi->type == WindowInfo::Type::iOS)
 	{
-		if (!wi->surface_handle && !CocoaTools::CreateMetalLayer(wi))
-			return VK_NULL_HANDLE;
+		if (!wi->surface_handle)
+		{
+#if TARGET_OS_IPHONE
+			// For iOS, the UIView already has a CAMetalLayer as its backing layer
+			UIView* view = (__bridge UIView*)wi->window_handle;
+			CAMetalLayer* layer = (CAMetalLayer*)[view layer];
+			if ([layer isKindOfClass:[CAMetalLayer class]])
+			{
+				wi->surface_handle = (__bridge_retained void*)layer;
+			}
+			else
+			{
+				return VK_NULL_HANDLE;
+			}
+#else
+			// For macOS, create the Metal layer
+			if (!CocoaTools::CreateMetalLayer(wi))
+				return VK_NULL_HANDLE;
+#endif
+		}
 
 		VkMetalSurfaceCreateInfoEXT surface_create_info = {VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT, nullptr, 0,
 			static_cast<const CAMetalLayer*>(wi->surface_handle)};

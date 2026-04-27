@@ -77,7 +77,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DUSE_DISCORD_SDK=OFF \
-            -DUSE_VULKAN=OFF \
+            -DUSE_VULKAN=ON \
             -DSDL_VULKAN=OFF \
             -DSDL_RENDER_VULKAN=OFF \
             -DENABLE_TESTS=OFF \

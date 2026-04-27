@@ -18,10 +18,10 @@ find_package(Threads REQUIRED)
 
 # ── Platform feature flags ─────────────────────────────────────────────
 # Must be set BEFORE any add_subdirectory() that might read these options.
-# USE_VULKAN=OFF: iOS uses Metal. No Vulkan SDK available in CI.
+# USE_VULKAN=ON: Enable Vulkan GS renderer for iOS via MoltenVK.
 # Setting this here ensures any subdirectory 'option(USE_VULKAN ...)' call
-# is overridden by our cached OFF value.
-set(USE_VULKAN OFF CACHE BOOL "Enable Vulkan GS renderer" FORCE)
+# is overridden by our cached ON value.
+set(USE_VULKAN ON CACHE BOOL "Enable Vulkan GS renderer" FORCE)
 # SDL_VULKAN/SDL_RENDER_VULKAN are also set below before add_subdirectory(SDL3)
 # but we also set them here in case SDL picks up the cache before that block runs.
 set(SDL_VULKAN        OFF CACHE BOOL "SDL: Vulkan support"          FORCE)

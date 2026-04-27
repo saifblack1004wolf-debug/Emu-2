@@ -222,7 +222,7 @@ bool GSDeviceVK::SelectInstanceExtensions(ExtensionList* extension_list, const W
 		return false;
 #endif
 #if defined(VK_USE_PLATFORM_METAL_EXT)
-	if (wi.type == WindowInfo::Type::MacOS && !SupportsExtension(VK_EXT_METAL_SURFACE_EXTENSION_NAME, true))
+	if ((wi.type == WindowInfo::Type::MacOS || wi.type == WindowInfo::Type::iOS) && !SupportsExtension(VK_EXT_METAL_SURFACE_EXTENSION_NAME, true))
 		return false;
 #endif
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
