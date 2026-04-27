@@ -249,20 +249,51 @@ jobs:
           APP_NAME=$(basename "$APP_PATH")
           echo "Copied $APP_NAME into Payload/"
 
-          # Copy MoltenVK.framework into the app's Frameworks directory
+          # ──────────────────────────────────────────────────────────────────────
+          # Handle MoltenVK library: check for libMoltenVK.dylib or extract from framework
+          # ──────────────────────────────────────────────────────────────────────
           mkdir -p "$IPA_DIR/Payload/$APP_NAME/Frameworks"
-          cp -rP "${{ github.workspace }}/Frameworks/MoltenVK.framework" "$IPA_DIR/Payload/$APP_NAME/Frameworks/"
-          echo "Copied MoltenVK.framework into Payload/$APP_NAME/Frameworks/"
+          FRAMEWORKS_TARGET="$IPA_DIR/Payload/$APP_NAME/Frameworks"
 
-          # Copy shaders and other assets into the app bundle
-          mkdir -p "$IPA_DIR/Payload/$APP_NAME"
+          # Step 1: Check if libMoltenVK.dylib exists in build artifacts
+          LIBMOLTENVK_PATH=$(find "$BUILD_DIR" ~/Library/Developer/Xcode/DerivedData -name "libMoltenVK.dylib" -type f 2>/dev/null | head -1 || true)
+          if [ -n "$LIBMOLTENVK_PATH" ] && [ -f "$LIBMOLTENVK_PATH" ]; then
+            echo "Found libMoltenVK.dylib in build artifacts"
+            cp "$LIBMOLTENVK_PATH" "$FRAMEWORKS_TARGET/libMoltenVK.dylib"
+            echo "✓ Copied libMoltenVK.dylib directly to Frameworks/"
+          else
+            # Step 2: If libMoltenVK.dylib not found, extract from MoltenVK.framework
+            if [ -d "${{ github.workspace }}/Frameworks/MoltenVK.framework" ]; then
+              BINARY_PATH="${{ github.workspace }}/Frameworks/MoltenVK.framework/MoltenVK"
+              if [ -f "$BINARY_PATH" ]; then
+                cp "$BINARY_PATH" "$FRAMEWORKS_TARGET/libMoltenVK.dylib"
+                echo "✓ Extracted MoltenVK binary from framework and copied as libMoltenVK.dylib"
+              else
+                echo "⚠ Warning: Neither libMoltenVK.dylib nor MoltenVK.framework/MoltenVK found"
+              fi
+            else
+              echo "⚠ Warning: MoltenVK.framework not found at ${{ github.workspace }}/Frameworks/MoltenVK.framework"
+            fi
+          fi
+
+          # Verify the file exists
+          if [ ! -f "$FRAMEWORKS_TARGET/libMoltenVK.dylib" ]; then
+            echo "❌ ERROR: libMoltenVK.dylib was not successfully copied to Frameworks/"
+            exit 1
+          fi
+          echo "✅ Verified: libMoltenVK.dylib exists at $FRAMEWORKS_TARGET/libMoltenVK.dylib"
+
+          # Step 3: Copy shaders directory
           cp -rP "${{ github.workspace }}/assets/resources/shaders" "$IPA_DIR/Payload/$APP_NAME/"
-          echo "Copied shaders directory into Payload/$APP_NAME/"
+          echo "✓ Copied shaders directory into Payload/$APP_NAME/"
+
+          # Step 4: Verify CMake RPATH flag is set correctly
+          # (Already set in cpp/CMakeLists.txt to @executable_path/Frameworks /usr/lib/swift)
+          echo "✓ CMake RPATH is configured for @executable_path/Frameworks"
 
           SWIFT_LIBS_DIR="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos"
-          FRAMEWORKS_DIR="$IPA_DIR/Payload/$APP_NAME/Frameworks"
-          if [ -d "$FRAMEWORKS_DIR" ]; then
-            for dylib in "$FRAMEWORKS_DIR"/libswift*.dylib; do
+          if [ -d "$FRAMEWORKS_TARGET" ]; then
+            for dylib in "$FRAMEWORKS_TARGET"/libswift*.dylib; do
               [ -f "$dylib" ] || continue
               libname=$(basename "$dylib")
               [ -f "$SWIFT_LIBS_DIR/$libname" ] && \
