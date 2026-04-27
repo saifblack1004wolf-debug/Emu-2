@@ -254,6 +254,10 @@ jobs:
           cp -rP "${{ github.workspace }}/Frameworks/MoltenVK.framework" "$IPA_DIR/Payload/$APP_NAME/Frameworks/"
           echo "Copied MoltenVK.framework into Payload/$APP_NAME/Frameworks/"
 
+          # Extract and copy libMoltenVK.dylib from the framework for direct loading
+          cp "${{ github.workspace }}/Frameworks/MoltenVK.framework/MoltenVK" "$IPA_DIR/Payload/$APP_NAME/Frameworks/libMoltenVK.dylib"
+          echo "Copied libMoltenVK.dylib into Payload/$APP_NAME/Frameworks/"
+
           SWIFT_LIBS_DIR="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos"
           FRAMEWORKS_DIR="$IPA_DIR/Payload/$APP_NAME/Frameworks"
           if [ -d "$FRAMEWORKS_DIR" ]; then
