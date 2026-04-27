@@ -29,6 +29,9 @@
 #include <sstream>
 
 // Tweakables
+#ifndef VK_MVK_MOLTEN_VK_EXTENSION_NAME
+#define VK_MVK_MOLTEN_VK_EXTENSION_NAME "VK_MVK_moltenvk"
+#endif
 enum : u32
 {
 	MAX_DRAW_CALLS_PER_FRAME = 8192,
@@ -237,7 +240,7 @@ bool GSDeviceVK::SelectInstanceExtensions(ExtensionList* extension_list, const W
 #ifdef VK_MVK_MOLTEN_VK_EXTENSION_NAME
 	SupportsExtension(VK_MVK_MOLTEN_VK_EXTENSION_NAME, false);
 #else
-	SupportsExtension(VK_MVK_MOLTENVK_EXTENSION_NAME, false);
+	SupportsExtension(VK_MVK_MOLTEN_VK_EXTENSION_NAME, false);
 #endif
 #endif
 
