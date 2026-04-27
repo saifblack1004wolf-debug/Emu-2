@@ -11,7 +11,11 @@
 #include "common/Console.h"
 
 #if TARGET_OS_IPHONE
+#ifdef __OBJC__
+#import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import <QuartzCore/QuartzCore.h>
+#endif
 #endif
 
 #include <algorithm>

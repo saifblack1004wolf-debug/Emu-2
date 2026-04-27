@@ -27,6 +27,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	target_compile_definitions(PCSX2_FLAGS INTERFACE
 		"_M_ARM64=1"
 	)
+	set_source_files_properties(
+		GS/Renderers/Vulkan/GSDeviceVK.cpp
+		GS/Renderers/Vulkan/VKSwapChain.cpp
+		PROPERTIES COMPILE_FLAGS "-x objective-c++"
+	)
 endif()
 
 target_compile_options(PCSX2_FLAGS INTERFACE "${PCSX2_WARNINGS}")
@@ -1371,6 +1376,7 @@ if (APPLE)
 	else()
 		target_link_libraries(PCSX2_FLAGS INTERFACE
 			"-framework UIKit"
+			"-framework Foundation"
 			"-framework GameController"
 			"-framework CoreHaptics"
 			"-framework AudioToolbox"

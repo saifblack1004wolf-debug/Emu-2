@@ -231,7 +231,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # Let's check. If PRIVATE, we might need to link SDL3 again or make PCSX2 link PUBLIC.
     # For now assume it works or we link SDL3::SDL3.
     # We need headers.
-    target_link_libraries(iPSX2 PRIVATE "-framework UIKit" "-framework Metal" "-framework MetalKit" "-framework QuartzCore" "-framework CoreText" "-framework CoreGraphics" "-framework MoltenVK")
+    target_link_libraries(iPSX2 PRIVATE "-framework UIKit" "-framework Foundation" "-framework Metal" "-framework MetalKit" "-framework QuartzCore" "-framework CoreText" "-framework CoreGraphics" "-framework MoltenVK")
 	# Git short hash for BUILD_ID
 	execute_process(
 		COMMAND git rev-parse --short HEAD
