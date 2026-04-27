@@ -926,7 +926,15 @@ void GSUpdateConfig(const Pcsx2Config::GSOptions& new_config)
 	if (!GSConfig.RestartOptionsAreEqual(old_config))
 	{
 		if (!GSreopen(true, true, GSConfig.Renderer, &old_config))
+		{
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+			Console.Warning("iOS: Failed to do full GS reopen, restoring previous GS configuration.");
+			GSConfig = old_config;
+			return;
+#else
 			pxFailRel("Failed to do full GS reopen");
+#endif
+		}
 		return;
 	}
 
@@ -938,7 +946,15 @@ void GSUpdateConfig(const Pcsx2Config::GSOptions& new_config)
 		GSConfig.SWExtraThreadsHeight != old_config.SWExtraThreadsHeight)
 	{
 		if (!GSreopen(false, true, GSConfig.Renderer, &old_config))
+		{
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+			Console.Warning("iOS: Failed to do quick GS reopen, restoring previous GS configuration.");
+			GSConfig = old_config;
+			return;
+#else
 			pxFailRel("Failed to do quick GS reopen");
+#endif
+		}
 
 		return;
 	}
@@ -1005,6 +1021,7 @@ void GSSetSoftwareRendering(bool software_renderer, GSInterlaceMode new_interlac
 	if (!g_gs_renderer)
 		return;
 
+	const GSInterlaceMode old_interlace = GSConfig.InterlaceMode;
 	GSConfig.InterlaceMode = new_interlace;
 
 	if (!GSIsHardwareRenderer() != software_renderer)
@@ -1012,8 +1029,23 @@ void GSSetSoftwareRendering(bool software_renderer, GSInterlaceMode new_interlac
 		// Config might be SW, and we're switching to HW -> use Auto.
 		const GSRendererType renderer = (software_renderer ? GSRendererType::SW :
 			(GSConfig.Renderer == GSRendererType::SW ? GSRendererType::Auto : GSConfig.Renderer));
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+		if (renderer == GSGetCurrentRenderer())
+		{
+			Console.WriteLn("iOS: GSSetSoftwareRendering requested current renderer, skipping reopen.");
+			return;
+		}
+#endif
 		if (!GSreopen(false, true, renderer, std::nullopt))
+		{
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+			Console.Warning("iOS: Failed to reopen GS for renderer switch. Keeping current renderer.");
+			GSConfig.InterlaceMode = old_interlace;
+			return;
+#else
 			pxFailRel("Failed to reopen GS for renderer switch.");
+#endif
+		}
 	}
 }
 
