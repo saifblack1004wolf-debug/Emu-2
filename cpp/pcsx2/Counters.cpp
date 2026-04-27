@@ -577,12 +577,14 @@ static __fi void DoFMVSwitch()
 			break;
 	}
 
+#if !defined(__APPLE__) || !TARGET_OS_IPHONE
 	if (EmuConfig.Gamefixes.SoftwareRendererFMVHack && EmuConfig.GS.UseHardwareRenderer())
 	{
 		DevCon.Warning("FMV Switch");
 		// we don't use the sw toggle here, because it'll change back to auto if set to sw
 		MTGS::SetSoftwareRendering(new_fmv_state, new_fmv_state ? GSInterlaceMode::AdaptiveTFF : EmuConfig.GS.InterlaceMode, false);
 	}
+#endif
 }
 
 
