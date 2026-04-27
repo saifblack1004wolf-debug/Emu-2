@@ -59,6 +59,31 @@ jobs:
           max-size: 2G
 
       # ──────────────────────────────────────────────────────────────────────────
+      # 4.5 Download and extract MoltenVK SDK
+      #      MoltenVK is required for Vulkan support on iOS (provides Metal backend)
+      # ──────────────────────────────────────────────────────────────────────────
+      - name: Download MoltenVK SDK
+        run: |
+          set -euo pipefail
+          MOLTENVK_VERSION="1.2.11"
+          MOLTENVK_DIR="${GITHUB_WORKSPACE}/MoltenVK"
+          mkdir -p "$MOLTENVK_DIR"
+          
+          echo "Downloading MoltenVK SDK v${MOLTENVK_VERSION}..."
+          curl -sL "https://github.com/KhronosGroup/MoltenVK/releases/download/v${MOLTENVK_VERSION}/MoltenVK-macos.tar.gz" \
+            -o /tmp/moltenvk.tar.gz
+          
+          tar -xzf /tmp/moltenvk.tar.gz -C "$MOLTENVK_DIR" --strip-components=1
+          
+          if [ ! -d "$MOLTENVK_DIR/MoltenVK/MoltenVK.xcframework" ]; then
+            echo "❌ MoltenVK.xcframework not found after extraction!"
+            exit 1
+          fi
+          
+          echo "✅ MoltenVK SDK extracted to: $MOLTENVK_DIR"
+          echo "MOLTENVK_DIR=$MOLTENVK_DIR" >> $GITHUB_ENV
+
+      # ──────────────────────────────────────────────────────────────────────────
       # 5. CMake configure
       #    FIX: use 'set -o pipefail' so the pipe to tee does NOT swallow cmake's
       #    non-zero exit code. Without this, cmake can fail but the step passes.
@@ -94,6 +119,7 @@ jobs:
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
             "-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY=" \
+            "-CMoltenVK_ROOT_DIR=${MOLTENVK_DIR}" \
             --fresh 2>&1 | tee /tmp/cmake_configure.log
           # Verify exit code — 'tee' can swallow it; re-check the log for errors
           if grep -q "^CMake Error" /tmp/cmake_configure.log; then

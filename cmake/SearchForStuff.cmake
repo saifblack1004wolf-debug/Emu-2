@@ -16,6 +16,23 @@
 find_package(Git)
 find_package(Threads REQUIRED)
 
+# ── iOS Framework Setup ────────────────────────────────────────────────
+# For iOS builds, set up framework search paths and enable Objective-C++
+# compilation for Vulkan interop code.
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	# Add framework search paths for iOS SDK frameworks
+	# This helps CMake find system frameworks like CoreFoundation, Metal, etc.
+	set(CMAKE_FRAMEWORK_PATH "${CMAKE_OSX_SYSROOT}/System/Library/Frameworks")
+	
+	# MoltenVK framework path - will be enhanced by CMake variables from workflow
+	if(MoltenVK_ROOT_DIR)
+		list(APPEND CMAKE_FRAMEWORK_PATH "${MoltenVK_ROOT_DIR}/MoltenVK")
+	endif()
+	
+	# Tell CMake to look for resources in iOS-specific locations
+	set(CMAKE_XCODE_ATTRIBUTE_FRAMEWORK_SEARCH_PATHS "${CMAKE_FRAMEWORK_PATH}")
+endif()
+
 # ── Platform feature flags ─────────────────────────────────────────────
 # Must be set BEFORE any add_subdirectory() that might read these options.
 # USE_VULKAN=ON: Enable Vulkan GS renderer for iOS via MoltenVK.

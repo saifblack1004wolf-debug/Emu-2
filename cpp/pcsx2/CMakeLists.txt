@@ -678,6 +678,34 @@ if(USE_VULKAN)
 	)
 	target_link_libraries(PCSX2_FLAGS INTERFACE vulkan-headers glslang)
 	target_include_directories(PCSX2_FLAGS INTERFACE ${SHADERC_INCLUDE_DIR})
+	
+	# On iOS, link against MoltenVK framework for Vulkan support
+	if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+		# Locate MoltenVK if provided via CMake variable
+		if(MoltenVK_ROOT_DIR)
+			set(MOLTENVK_XCFRAMEWORK_PATH "${MoltenVK_ROOT_DIR}/MoltenVK/MoltenVK.xcframework")
+			if(NOT EXISTS "${MOLTENVK_XCFRAMEWORK_PATH}")
+				message(FATAL_ERROR "MoltenVK.xcframework not found at: ${MOLTENVK_XCFRAMEWORK_PATH}")
+			endif()
+		else()
+			# Fallback: check system locations
+			find_path(MOLTENVK_XCFRAMEWORK_PATH
+				NAMES "MoltenVK.xcframework"
+				PATHS "/usr/local/lib" "/usr/local/Cellar" "${CMAKE_PREFIX_PATH}"
+				NO_DEFAULT_PATH
+			)
+			if(NOT MOLTENVK_XCFRAMEWORK_PATH)
+				message(FATAL_ERROR "MoltenVK SDK not found. Please provide -CMoltenVK_ROOT_DIR=<path> or install globally.")
+			endif()
+		endif()
+		
+		# Link the MoltenVK framework and set required flags
+		target_link_libraries(PCSX2_FLAGS INTERFACE "-framework MoltenVK")
+		target_link_libraries(PCSX2_FLAGS INTERFACE "-F${MoltenVK_ROOT_DIR}/MoltenVK")
+		target_include_directories(PCSX2_FLAGS INTERFACE "${MOLTENVK_XCFRAMEWORK_PATH}/ios-arm64/MoltenVK.framework/Headers")
+		
+		message(STATUS "MoltenVK linked for iOS: ${MOLTENVK_XCFRAMEWORK_PATH}")
+	endif()
 endif()
 
 set(pcsx2GSMetalShaders
