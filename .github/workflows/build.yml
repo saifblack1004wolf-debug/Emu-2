@@ -7,16 +7,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Download and Force-Link MoltenVK
+      - name: Download MoltenVK
         run: |
           curl -L https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.1/MoltenVK-ios.tar -o MoltenVK.tar
+      - name: Extract MoltenVK
+        run: |
           tar -xf MoltenVK.tar
+      - name: Create Frameworks directory
+        run: |
           mkdir -p Frameworks
-          # هذا السطر السحري يبحث عن ملف الآيفون الحقيقي وينقله للمكان المطلوب
-          find . -name "MoltenVK.framework" -path "*/ios-arm64/*" -exec cp -r {} Frameworks/ \;
-          echo "Checked Frameworks folder:"
-          ls -R Frameworks/
+      - name: Move MoltenVK framework
+        run: |
+          find . -path "*/ios-arm64/MoltenVK.framework" -exec cp -R {} ./Frameworks/ \;
+      - name: Verify Frameworks
+        run: |
+          ls -R $GITHUB_WORKSPACE/Frameworks
       - name: CMake Configure
         run: |
-          cmake -B build -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_FRAMEWORK_PATH=$(pwd)/Frameworks -DMoltenVK_FRAMEWORK_PATH=$(pwd)/Frameworks/MoltenVK.framework
+          cmake -B build -G Xcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_FRAMEWORK_PATH=$GITHUB_WORKSPACE/Frameworks -DMoltenVK_FRAMEWORK_PATH=$GITHUB_WORKSPACE/Frameworks/MoltenVK.framework
+      - name: Build
+        run: |
           cmake --build build --config Release --target iPSX2
