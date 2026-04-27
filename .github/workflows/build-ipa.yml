@@ -225,6 +225,17 @@ jobs:
           echo "✅ Archive created: $ARCHIVE_PATH"
 
       # ──────────────────────────────────────────────────────────────────────────
+      # 7.5 Embed MoltenVK into app bundle
+      # ──────────────────────────────────────────────────────────────────────────
+      - name: Embed MoltenVK into app bundle
+        run: |
+          APP_BUNDLE=$(find build -name "iPSX2.app" | head -1)
+          mkdir -p "$APP_BUNDLE/Frameworks"
+          cp -Ra Frameworks/MoltenVK.framework "$APP_BUNDLE/Frameworks/"
+          echo "MoltenVK copied to: $APP_BUNDLE/Frameworks/"
+          ls -la "$APP_BUNDLE/Frameworks/"
+
+      # ──────────────────────────────────────────────────────────────────────────
       # 8. Assemble unsigned IPA manually
       #    Payload/ + SwiftSupport/iphoneos/ → zip → .ipa
       #    Includes Full Vulkan & Assets Validation before assembly
