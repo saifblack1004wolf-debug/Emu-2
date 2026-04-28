@@ -176,6 +176,128 @@ void CrashHandler::WriteDumpForCaller()
 	WriteMinidumpAndCallstack(nullptr);
 }
 
+#elif defined(__APPLE__)
+
+#include <fcntl.h>
+#include <signal.h>
+#include <unistd.h>
+#include <limits.h>
+#include <cstring>
+#include <ctime>
+
+namespace CrashHandler
+{
+	static sig_atomic_t s_in_signal_handler = 0;
+	static sig_atomic_t s_crash_report_path_set = 0;
+	static char s_crash_report_path[PATH_MAX] = {};
+
+	static const char* GetSignalName(int signal_no)
+	{
+		switch (signal_no)
+		{
+			case SIGSEGV: return "SIGSEGV";
+			case SIGBUS: return "SIGBUS";
+			case SIGILL: return "SIGILL";
+			default: return "UNKNOWN";
+		}
+	}
+
+	static void WriteCrashReport(int signal, siginfo_t* siginfo, void* ctx)
+	{
+		if (s_in_signal_handler)
+			return;
+		s_in_signal_handler = 1;
+
+		if (!s_crash_report_path_set)
+		{
+			const char* logs_path = EmuFolders::Logs.c_str();
+			if (logs_path && logs_path[0] != '\0')
+			{
+				auto logs_len = std::strlen(logs_path);
+				if (logs_path[logs_len - 1] == '/')
+				{
+					int written = std::snprintf(s_crash_report_path, sizeof(s_crash_report_path), "%scrash_report.txt", logs_path);
+					if (written >= 0 && written < static_cast<int>(sizeof(s_crash_report_path)))
+						s_crash_report_path_set = 1;
+				}
+				else
+				{
+					int written = std::snprintf(s_crash_report_path, sizeof(s_crash_report_path), "%s/crash_report.txt", logs_path);
+					if (written >= 0 && written < static_cast<int>(sizeof(s_crash_report_path)))
+						s_crash_report_path_set = 1;
+				}
+			}
+		}
+
+		if (s_crash_report_path_set)
+		{
+			int fd = open(s_crash_report_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+			if (fd >= 0)
+			{
+				char buf[256];
+				void* exception_pc = nullptr;
+				ucontext_t* uctx = static_cast<ucontext_t*>(ctx);
+#if defined(__aarch64__)
+				exception_pc = reinterpret_cast<void*>(uctx->uc_mcontext->__ss.__pc);
+#elif defined(__x86_64__)
+				exception_pc = reinterpret_cast<void*>(uctx->uc_mcontext->__ss.__rip);
+#endif
+				struct timespec ts;
+				if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
+				{
+					int len = std::snprintf(buf, sizeof(buf),
+						"Signal: %s\nFault address: %p\nProgram counter: %p\nTimestamp: %" PRIuMAX ".%09u\n",
+						GetSignalName(signal), siginfo ? siginfo->si_addr : nullptr, exception_pc,
+						static_cast<uintmax_t>(ts.tv_sec), static_cast<unsigned>(ts.tv_nsec));
+					if (len > 0)
+						write(fd, buf, static_cast<size_t>(len));
+				}
+				else
+				{
+					int len = std::snprintf(buf, sizeof(buf),
+						"Signal: %s\nFault address: %p\nProgram counter: %p\nTimestamp: unknown\n",
+						GetSignalName(signal), siginfo ? siginfo->si_addr : nullptr, exception_pc);
+					if (len > 0)
+						write(fd, buf, static_cast<size_t>(len));
+				}
+				close(fd);
+			}
+		}
+	}
+
+	void CrashSignalHandler(int signal, siginfo_t* siginfo, void* ctx)
+	{
+		WriteCrashReport(signal, siginfo, ctx);
+		const char abort_message[] = "Aborting application.\n";
+		write(STDERR_FILENO, abort_message, sizeof(abort_message) - 1);
+		_exit(1);
+	}
+
+	bool Install()
+	{
+		return true;
+	}
+
+	void SetWriteDirectory(std::string_view dump_directory)
+	{
+		if (!dump_directory.empty())
+		{
+			auto len = dump_directory.size();
+			if (len < sizeof(s_crash_report_path))
+			{
+				std::memcpy(s_crash_report_path, dump_directory.data(), len);
+				s_crash_report_path[len] = '\0';
+				s_crash_report_path_set = 1;
+			}
+		}
+	}
+
+	void WriteDumpForCaller()
+	{
+		// no-op on Apple crash signal path
+	}
+} // namespace CrashHandler
+
 #elif !defined(__APPLE__) && defined(HAS_LIBBACKTRACE)
 
 #include "FileSystem.h"
